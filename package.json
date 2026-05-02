@@ -22,6 +22,8 @@
   },
   "homepage": "https://github.com/gaaiyun/paimon-pet#readme",
   "dependencies": {
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^7.4.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zustand": "^5.0.12"
@@ -29,6 +31,8 @@
   "devDependencies": {
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/cli": "^2.11.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

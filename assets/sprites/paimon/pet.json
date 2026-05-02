@@ -1,0 +1,19 @@
+{
+  "name": "paimon",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "columns": 8,
+  "rows": 9,
+  "fps": 9,
+  "states": {
+    "idle": { "row": 0, "frameMax": 8 },
+    "running-right": { "row": 1, "frameMax": 8 },
+    "running-left": { "row": 2, "frameMax": 8 },
+    "waving": { "row": 3, "frameMax": 8 },
+    "jumping": { "row": 4, "frameMax": 8 },
+    "failed": { "row": 5, "frameMax": 8 },
+    "waiting": { "row": 6, "frameMax": 8 },
+    "running": { "row": 7, "frameMax": 8 },
+    "review": { "row": 8, "frameMax": 8 }
+  }
+}
