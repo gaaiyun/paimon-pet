@@ -38,6 +38,7 @@ export interface AiSettings {
   model: string;
   temperature: number;
   maxTokens: number;
+  personaPrompt: string;
 }
 
 export interface TtsSettings {

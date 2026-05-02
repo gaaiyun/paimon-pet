@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { PetWindow } from "./components/PetWindow";
 import { useWebSocket } from "./hooks/useWebSocket";
+import { useAudio } from "./hooks/useAudio";
 import { useSettingsStore } from "./stores/settingsStore";
 
 /** Backend connection states */
@@ -20,7 +21,7 @@ function App() {
 
   // Build the WebSocket URL from the configured backend port
   const wsUrl = useMemo(
-    () => `ws://localhost:${backendPort}/ws`,
+    () => `ws://localhost:${backendPort}/client-ws`,
     [backendPort],
   );
 
@@ -58,7 +59,17 @@ function App() {
     };
   }, [backendPort, backendStatus]);
 
-  const { sendText } = useWebSocket(wsUrl);
+  const { playBase64Audio } = useAudio();
+
+  // Stable callback ref so useWebSocket can invoke it on audio-output messages
+  const handleAudioOutput = useCallback(
+    (base64: string) => {
+      playBase64Audio(base64);
+    },
+    [playBase64Audio],
+  );
+
+  const { sendText } = useWebSocket(wsUrl, { onAudioOutput: handleAudioOutput });
 
   return (
     <div className="app-container">

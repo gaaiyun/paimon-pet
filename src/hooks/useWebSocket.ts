@@ -4,13 +4,18 @@ import { useChatStore } from "../stores/chatStore";
 import { usePetStore } from "../stores/petStore";
 import type { ServerMessage } from "../types/messages";
 
+interface UseWebSocketOptions {
+  /** Called with base64 audio data when the server sends an audio-output message */
+  onAudioOutput?: (base64: string) => void;
+}
+
 /**
  * Hook that manages a WebSocketService lifecycle:
  *  - Connects on mount, disconnects on unmount
  *  - Dispatches incoming messages to the appropriate Zustand stores
  *  - Returns convenience send functions
  */
-export function useWebSocket(url: string) {
+export function useWebSocket(url: string, options?: UseWebSocketOptions) {
   const serviceRef = useRef<WebSocketService | null>(null);
 
   // Store actions (pulled once — they are stable references from zustand)
@@ -42,7 +47,7 @@ export function useWebSocket(url: string) {
           setTyping(msg.data === "thinking" || msg.data === "speaking");
           break;
         case "audio-output":
-          // Audio playback is handled by useAudio hook
+          options?.onAudioOutput?.(msg.data);
           break;
         case "error":
           console.error("[WebSocket] server error:", msg.data);
@@ -59,7 +64,7 @@ export function useWebSocket(url: string) {
       ws.disconnect();
       serviceRef.current = null;
     };
-  }, [url, addMessage, setTyping, setExpression, setAnimation, setState]);
+  }, [url, options, addMessage, setTyping, setExpression, setAnimation, setState]);
 
   const sendText = useCallback((text: string) => {
     serviceRef.current?.sendText(text);

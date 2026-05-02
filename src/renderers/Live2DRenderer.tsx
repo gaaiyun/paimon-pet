@@ -44,7 +44,7 @@ export function Live2DRenderer({ scale, expression }: Live2DRendererProps) {
           if (!mounted) return;
 
           model.scale.set(scale);
-          app.stage.addChild(model);
+          (app.stage as any).addChild(model);
           modelRef.current = model;
         } catch {
           // Model files not available — silent fallback

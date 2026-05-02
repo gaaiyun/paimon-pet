@@ -2,7 +2,7 @@ use tauri::{
     image::Image,
     menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
-    App, Manager, WebviewWindowBuilder,
+    App, Emitter, Manager, WebviewWindowBuilder,
 };
 
 /// Create the system tray icon with right-click context menu.
@@ -14,6 +14,8 @@ pub fn create_tray(app: &mut App) {
         .expect("Failed to create hide menu item");
     let settings_i = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)
         .expect("Failed to create settings menu item");
+    let mute_i = MenuItem::with_id(app, "mute", "静音", true, None::<&str>)
+        .expect("Failed to create mute menu item");
     let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)
         .expect("Failed to create quit menu item");
 
@@ -23,6 +25,7 @@ pub fn create_tray(app: &mut App) {
         .item(&hide_i)
         .separator()
         .item(&settings_i)
+        .item(&mute_i)
         .separator()
         .item(&quit_i)
         .build()
@@ -40,6 +43,10 @@ pub fn create_tray(app: &mut App) {
             "show" => show_pet_window(app),
             "hide" => hide_pet_window(app),
             "settings" => open_settings_window(app),
+            "mute" => {
+                // Toggle mute state via frontend event
+                let _ = app.emit("toggle-mute", ());
+            }
             "quit" => app.exit(0),
             _ => {}
         })

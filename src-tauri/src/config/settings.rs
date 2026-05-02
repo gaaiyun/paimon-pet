@@ -31,6 +31,7 @@ impl Default for AppSettings {
 pub struct GeneralSettings {
     pub language: String,
     pub theme: String,
+    pub autostart: bool,
 }
 
 impl Default for GeneralSettings {
@@ -38,6 +39,7 @@ impl Default for GeneralSettings {
         Self {
             language: "zh-CN".to_string(),
             theme: "dark".to_string(),
+            autostart: false,
         }
     }
 }
@@ -47,6 +49,11 @@ impl Default for GeneralSettings {
 pub struct PetSettings {
     pub visual_mode: String,
     pub scale: f64,
+    pub x: i32,
+    pub y: i32,
+    pub animation_speed: f64,
+    pub always_on_top: bool,
+    pub click_through: bool,
 }
 
 impl Default for PetSettings {
@@ -54,22 +61,35 @@ impl Default for PetSettings {
         Self {
             visual_mode: "live2d".to_string(),
             scale: 1.0,
+            x: 0,
+            y: 0,
+            animation_speed: 1.0,
+            always_on_top: true,
+            click_through: false,
         }
     }
 }
 
-/// Voice input settings.
+/// Voice input/output settings.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoiceSettings {
-    pub enabled: bool,
-    pub auto_detect: bool,
+    pub input_device: String,
+    pub output_device: String,
+    pub input_volume: u8,
+    pub output_volume: u8,
+    pub push_to_talk_key: String,
+    pub continuous_listening: bool,
 }
 
 impl Default for VoiceSettings {
     fn default() -> Self {
         Self {
-            enabled: true,
-            auto_detect: true,
+            input_device: String::new(),
+            output_device: String::new(),
+            input_volume: 80,
+            output_volume: 80,
+            push_to_talk_key: "Alt+Space".to_string(),
+            continuous_listening: false,
         }
     }
 }
@@ -81,6 +101,7 @@ pub struct AiSettings {
     pub api_endpoint: String,
     pub model: String,
     pub temperature: f64,
+    pub max_tokens: u32,
 }
 
 impl Default for AiSettings {
@@ -90,6 +111,7 @@ impl Default for AiSettings {
             api_endpoint: "http://127.0.0.1:18789/v1".to_string(),
             model: "openclaw:main".to_string(),
             temperature: 0.7,
+            max_tokens: 1024,
         }
     }
 }
@@ -99,6 +121,8 @@ impl Default for AiSettings {
 pub struct TtsSettings {
     pub provider: String,
     pub vits_server_url: String,
+    pub language: String,
+    pub speaker: String,
 }
 
 impl Default for TtsSettings {
@@ -106,6 +130,8 @@ impl Default for TtsSettings {
         Self {
             provider: "vits".to_string(),
             vits_server_url: "http://127.0.0.1:8020".to_string(),
+            language: "zh".to_string(),
+            speaker: "female".to_string(),
         }
     }
 }
@@ -113,13 +139,19 @@ impl Default for TtsSettings {
 /// Advanced settings for power users.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdvancedSettings {
+    pub debug_mode: bool,
+    pub log_level: String,
     pub backend_port: u16,
+    pub data_directory: String,
 }
 
 impl Default for AdvancedSettings {
     fn default() -> Self {
         Self {
+            debug_mode: false,
+            log_level: "info".to_string(),
             backend_port: 12393,
+            data_directory: String::new(),
         }
     }
 }
