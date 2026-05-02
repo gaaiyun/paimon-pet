@@ -1,15 +1,77 @@
+import { useEffect, useMemo, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { PetWindow } from "./components/PetWindow";
 import { useWebSocket } from "./hooks/useWebSocket";
+import { useSettingsStore } from "./stores/settingsStore";
 
-/** Default WebSocket URL for the Python backend */
-const WS_URL = "ws://localhost:21520/ws";
+/** Backend connection states */
+type BackendStatus = "checking" | "online" | "offline";
 
+/**
+ * Root application component.
+ *
+ * On mount it checks the Python backend health via the Tauri command,
+ * then connects a WebSocket to the backend and renders PetWindow.
+ */
 function App() {
-  const { sendText } = useWebSocket(WS_URL);
+  const backendPort = useSettingsStore((s) => s.settings.advanced.backendPort);
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
+
+  // Build the WebSocket URL from the configured backend port
+  const wsUrl = useMemo(
+    () => `ws://localhost:${backendPort}/ws`,
+    [backendPort],
+  );
+
+  // Check backend health on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkHealth() {
+      try {
+        const healthy = await invoke<boolean>("check_backend_health", {
+          port: backendPort,
+        });
+        if (!cancelled) {
+          setBackendStatus(healthy ? "online" : "offline");
+        }
+      } catch {
+        if (!cancelled) {
+          setBackendStatus("offline");
+        }
+      }
+    }
+
+    checkHealth();
+
+    // Re-check periodically every 10 seconds while status is offline
+    const interval = setInterval(() => {
+      if (backendStatus !== "online") {
+        checkHealth();
+      }
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [backendPort, backendStatus]);
+
+  const { sendText } = useWebSocket(wsUrl);
 
   return (
     <div className="app-container">
+      {backendStatus === "checking" && (
+        <div style={{ color: "#ffd700", fontSize: "14px" }}>
+          正在连接后端...
+        </div>
+      )}
+      {backendStatus === "offline" && (
+        <div style={{ color: "#ff6b6b", fontSize: "14px" }}>
+          后端离线 - 请启动 Open-LLM-VTuber
+        </div>
+      )}
       <PetWindow onSend={sendText} />
     </div>
   );

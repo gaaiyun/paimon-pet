@@ -22,8 +22,14 @@
   },
   "homepage": "https://github.com/gaaiyun/paimon-pet#readme",
   "dependencies": {
+    "@mantine/core": "^9.1.1",
+    "@mantine/form": "^9.1.1",
+    "@mantine/hooks": "^9.1.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^7.4.3",
+    "postcss": "^8.5.13",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zustand": "^5.0.12"
