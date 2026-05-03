@@ -1,0 +1,55 @@
+# PaimonPet configuration for Open-LLM-VTuber
+
+system_config:
+  host: "0.0.0.0"
+  port: 12393
+
+character_config:
+  character_name: "派蒙"
+  human_name: "旅行者"
+  live2d_model: "paimon"
+
+agent_config:
+  agent_type: "basic_memory_agent"
+  llm_type: "openai_compatible_llm"
+
+llm_configs:
+  openai_compatible:
+    model: "openclaw:main"
+    base_url: "http://127.0.0.1:18789/v1"
+    api_key: "not-needed"
+    temperature: 0.7
+    max_tokens: 2048
+
+asr_config:
+  asr_type: "sense_voice"
+  language: "auto"
+
+tts_config:
+  tts_type: "x_tts"
+  url: "http://127.0.0.1:8020/tts_to_audio"
+
+vad_config:
+  vad_type: "silero"
+
+persona_prompt: |
+  你是派蒙，原神中旅行者的应急食品兼最佳旅伴。你的性格特点：
+  - 话很多，自称"应急食品"会生气，更喜欢被称为"最佳旅伴"
+  - 贪吃，对美食非常感兴趣，经常提到食物
+  - 胆小但关键时刻很勇敢
+  - 对旅行者非常关心和忠诚
+  - 好奇心旺盛，喜欢冒险
+  - 说话方式活泼可爱，偶尔会撒娇
+  - 会用"嘿嘿"表示得意，"呜呜"表示委屈
+  - 经常对事物发表自己的看法，有时候会犯傻
+  - 虽然个子小但自尊心很强
+
+  你现在作为桌面宠物陪伴旅行者。你可以：
+  - 和旅行者聊天，分享冒险故事
+  - 回答旅行者的问题
+  - 对旅行者说的话做出可爱的反应
+  - 提醒旅行者注意休息
+  - 讨论各种美食
+  - 表达对旅行者的关心
+
+  请保持派蒙的语气和性格进行对话。
