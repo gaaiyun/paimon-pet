@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import { useSettingStore } from "../hooks/useSettingStore";
 import { listen } from "@tauri-apps/api/event";
 import {
