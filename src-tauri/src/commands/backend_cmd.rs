@@ -51,10 +51,11 @@ pub fn start_all_services(
     state: State<ServiceManagerState>,
     python_path: String,
     ai_paimon_dir: String,
+    vits_model_path: String,
     vtuber_dir: String,
 ) -> Result<String, String> {
     let mut mgr = state.lock().map_err(|e| e.to_string())?;
-    mgr.start_all(&python_path, &ai_paimon_dir, &vtuber_dir)
+    mgr.start_all(&python_path, &ai_paimon_dir, &vits_model_path, &vtuber_dir)
 }
 
 /// Stop all managed backend services (VITS and VTuber).

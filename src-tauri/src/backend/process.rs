@@ -63,13 +63,25 @@ impl ServiceManager {
     /// Start the VITS server as a child process.
     ///
     /// Runs `python src/vits_server/server.py` with the working directory
-    /// set to `ai_paimon_dir`. Returns the child PID on success.
-    pub fn start_vits(&mut self, python_path: &str, ai_paimon_dir: &str) -> Result<u32, String> {
-        let child = Command::new(python_path)
-            .arg("src/vits_server/server.py")
+    /// set to `ai_paimon_dir`. Sets `VITS_MODEL_PATH` env var if a custom
+    /// model path is provided. Returns the child PID on success.
+    pub fn start_vits(
+        &mut self,
+        python_path: &str,
+        ai_paimon_dir: &str,
+        vits_model_path: &str,
+    ) -> Result<u32, String> {
+        let mut cmd = Command::new(python_path);
+        cmd.arg("src/vits_server/server.py")
             .current_dir(ai_paimon_dir)
             .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        if !vits_model_path.is_empty() {
+            cmd.env("VITS_MODEL_PATH", vits_model_path);
+        }
+
+        let child = cmd
             .spawn()
             .map_err(|e| format!("Failed to start VITS server: {}", e))?;
 
@@ -108,6 +120,7 @@ impl ServiceManager {
         &mut self,
         python_path: &str,
         ai_paimon_dir: &str,
+        vits_model_path: &str,
         vtuber_dir: &str,
     ) -> Result<String, String> {
         // Step 1: OpenClaw must be running already.
@@ -121,7 +134,7 @@ impl ServiceManager {
         let vits_status = if self.check_vits() {
             "already running".to_string()
         } else {
-            let pid = self.start_vits(python_path, ai_paimon_dir)?;
+            let pid = self.start_vits(python_path, ai_paimon_dir, vits_model_path)?;
             // Give VITS a few seconds to initialise.
             std::thread::sleep(std::time::Duration::from_secs(3));
             format!("started (PID {})", pid)

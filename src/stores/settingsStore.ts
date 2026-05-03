@@ -56,7 +56,7 @@ const defaultSettings: AppSettings = {
   backendPaths: {
     openclawPath: "openclaw",
     aiPaimonDir: "",
-    vitsModelPath: "./paimon.pth",
+    vitsModelPath: "models/vits/paimon/paimon6k_390000.pth",
     openLlmVtuberDir: "",
     pythonPath: "python",
   },

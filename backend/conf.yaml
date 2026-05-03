@@ -1,55 +1,125 @@
 # PaimonPet configuration for Open-LLM-VTuber
 
 system_config:
-  host: "0.0.0.0"
+  conf_version: 'v1.2.1'
+  host: '0.0.0.0'
   port: 12393
+  config_alts_dir: 'characters'
+  tool_prompts:
+    live2d_expression_prompt: 'live2d_expression_prompt'
+    group_conversation_prompt: 'group_conversation_prompt'
+    mcp_prompt: 'mcp_prompt'
+    proactive_speak_prompt: 'proactive_speak_prompt'
 
 character_config:
-  character_name: "派蒙"
-  human_name: "旅行者"
-  live2d_model: "paimon"
+  conf_name: 'paimon'
+  conf_uid: 'paimon_001'
+  live2d_model_name: 'paimon'
+  character_name: '派蒙'
+  avatar: ''
+  human_name: '旅行者'
 
-agent_config:
-  agent_type: "basic_memory_agent"
-  llm_type: "openai_compatible_llm"
+  persona_prompt: |
+    你是派蒙，原神中旅行者的应急食品兼最佳旅伴。你的性格特点：
+    - 话很多，自称"应急食品"会生气，更喜欢被称为"最佳旅伴"
+    - 贪吃，对美食非常感兴趣，经常提到食物
+    - 胆小但关键时刻很勇敢
+    - 对旅行者非常关心和忠诚
+    - 好奇心旺盛，喜欢冒险
+    - 说话方式活泼可爱，偶尔会撒娇
+    - 会用"嘿嘿"表示得意，"呜呜"表示委屈
+    - 经常对事物发表自己的看法，有时候会犯傻
+    - 虽然个子小但自尊心很强
 
-llm_configs:
-  openai_compatible:
-    model: "openclaw:main"
-    base_url: "http://127.0.0.1:18789/v1"
-    api_key: "not-needed"
-    temperature: 0.7
-    max_tokens: 2048
+    你现在作为桌面宠物陪伴旅行者。你可以：
+    - 和旅行者聊天，分享冒险故事
+    - 回答旅行者的问题
+    - 对旅行者说的话做出可爱的反应
+    - 提醒旅行者注意休息
+    - 讨论各种美食
+    - 表达对旅行者的关心
 
-asr_config:
-  asr_type: "sense_voice"
-  language: "auto"
+    请保持派蒙的语气和性格进行对话。
 
-tts_config:
-  tts_type: "x_tts"
-  url: "http://127.0.0.1:8020/tts_to_audio"
+  agent_config:
+    conversation_agent_choice: 'basic_memory_agent'
 
-vad_config:
-  vad_type: "silero"
+    agent_settings:
+      basic_memory_agent:
+        llm_provider: 'openai_compatible_llm'
+        faster_first_response: True
+        segment_method: 'pysbd'
+        use_mcpp: False
+        mcp_enabled_servers: []
 
-persona_prompt: |
-  你是派蒙，原神中旅行者的应急食品兼最佳旅伴。你的性格特点：
-  - 话很多，自称"应急食品"会生气，更喜欢被称为"最佳旅伴"
-  - 贪吃，对美食非常感兴趣，经常提到食物
-  - 胆小但关键时刻很勇敢
-  - 对旅行者非常关心和忠诚
-  - 好奇心旺盛，喜欢冒险
-  - 说话方式活泼可爱，偶尔会撒娇
-  - 会用"嘿嘿"表示得意，"呜呜"表示委屈
-  - 经常对事物发表自己的看法，有时候会犯傻
-  - 虽然个子小但自尊心很强
+      hume_ai_agent:
+        api_key: ''
+        host: 'api.hume.ai'
+        config_id: ''
+        idle_timeout: 15
 
-  你现在作为桌面宠物陪伴旅行者。你可以：
-  - 和旅行者聊天，分享冒险故事
-  - 回答旅行者的问题
-  - 对旅行者说的话做出可爱的反应
-  - 提醒旅行者注意休息
-  - 讨论各种美食
-  - 表达对旅行者的关心
+      letta_agent:
+        host: 'localhost'
+        port: 8283
+        id: xxx
+        faster_first_response: True
+        segment_method: 'pysbd'
 
-  请保持派蒙的语气和性格进行对话。
+    llm_configs:
+      openai_compatible_llm:
+        base_url: 'http://127.0.0.1:18789/v1'
+        llm_api_key: 'not-needed'
+        organization_id: null
+        project_id: null
+        model: 'openclaw:main'
+        temperature: 0.7
+        interrupt_method: 'user'
+
+  asr_config:
+    asr_model: 'sherpa_onnx_asr'
+
+    sherpa_onnx_asr:
+      model_type: 'sense_voice'
+      sense_voice: './models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.int8.onnx'
+      tokens: './models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/tokens.txt'
+      num_threads: 4
+      use_itn: True
+      provider: 'cpu'
+
+  tts_config:
+    tts_model: 'x_tts'
+
+    x_tts:
+      api_url: 'http://127.0.0.1:8020/tts_to_audio'
+      speaker_wav: 'female'
+      language: 'zh'
+
+    edge_tts:
+      voice: 'zh-CN-XiaoyiNeural'
+
+  vad_config:
+    vad_model: null
+
+    silero_vad:
+      orig_sr: 16000
+      target_sr: 16000
+      prob_threshold: 0.4
+      db_threshold: 60
+      required_hits: 3
+      required_misses: 24
+      smoothing_window: 5
+
+  tts_preprocessor_config:
+    remove_special_char: True
+    ignore_brackets: True
+    ignore_parentheses: True
+    ignore_asterisks: True
+    ignore_angle_brackets: True
+
+    translator_config:
+      translate_audio: False
+      translate_provider: 'deeplx'
+
+      deeplx:
+        deeplx_target_lang: 'JA'
+        deeplx_api_endpoint: 'http://localhost:1188/v2/translate'
