@@ -25,6 +25,8 @@
     "@mantine/core": "^9.1.1",
     "@mantine/form": "^9.1.1",
     "@mantine/hooks": "^9.1.1",
+    "@tauri-apps/plugin-log": "^2.8.0",
+    "phaser": "^3.90.0",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^7.4.3",
     "postcss": "^8.5.13",

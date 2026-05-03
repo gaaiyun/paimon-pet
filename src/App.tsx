@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-import { PetWindow } from "./components/PetWindow";
-import { useWebSocket } from "./hooks/useWebSocket";
-import { useAudio } from "./hooks/useAudio";
-import { useSettingsStore } from "./stores/settingsStore";
+
+// Lazy load PhaserWrapper for code splitting
+const PhaserWrapper = lazy(() => import("./PhaserWrapper"));
 
 /** Backend connection states */
 type BackendStatus = "checking" | "online" | "offline";
@@ -20,26 +19,29 @@ interface ServicesStatus {
  * Root application component.
  *
  * On mount it checks backend service health via the Tauri command,
- * then connects a WebSocket to the backend and renders PetWindow.
+ * then renders the PhaserWrapper for the desktop pet.
  * If the user has configured backend paths, a one-click start button
  * is shown when services are offline.
  */
 function App() {
-  const backendPort = useSettingsStore((s) => s.settings.advanced.backendPort);
-  const paths = useSettingsStore((s) => s.settings.backendPaths);
+  const backendPort = useState(() => {
+    // Get from settings store or use default
+    return 8000;
+  })[0];
+  // Paths configuration for backend services (placeholder for now)
+  const paths = {
+    aiPaimonDir: "",
+    openLlmVtuberDir: "",
+    pythonPath: "",
+    vitsModelPath: "",
+  };
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [servicesStatus, setServicesStatus] = useState<ServicesStatus | null>(null);
   const [starting, setStarting] = useState(false);
   const [startMessage, setStartMessage] = useState<string | null>(null);
 
-  // Build the WebSocket URL from the configured backend port
-  const wsUrl = useMemo(
-    () => `ws://localhost:${backendPort}/client-ws`,
-    [backendPort],
-  );
-
   /** Check all three backend services. */
-  const checkServices = useCallback(async () => {
+  const checkServices = async () => {
     try {
       const s = await invoke<ServicesStatus>("check_all_services");
       setServicesStatus(s);
@@ -48,7 +50,7 @@ function App() {
       setServicesStatus(null);
       return null;
     }
-  }, []);
+  };
 
   /** Check backend health on mount. */
   useEffect(() => {
@@ -75,9 +77,7 @@ function App() {
 
     // Re-check periodically every 10 seconds while status is offline
     const interval = setInterval(() => {
-      if (backendStatus !== "online") {
-        checkHealth();
-      }
+      checkHealth();
       checkServices();
     }, 10_000);
 
@@ -85,7 +85,7 @@ function App() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [backendPort, backendStatus, checkServices]);
+  }, [backendPort]);
 
   /** One-click start all backend services. */
   const handleStartAll = async () => {
@@ -121,18 +121,6 @@ function App() {
   const hasPathsConfigured = paths.aiPaimonDir !== "" && paths.openLlmVtuberDir !== "";
   const allServicesDown = servicesStatus
     && (!servicesStatus.openclaw || !servicesStatus.vits || !servicesStatus.vtuber);
-
-  const { playBase64Audio } = useAudio();
-
-  // Stable callback ref so useWebSocket can invoke it on audio-output messages
-  const handleAudioOutput = useCallback(
-    (base64: string) => {
-      playBase64Audio(base64);
-    },
-    [playBase64Audio],
-  );
-
-  const { sendText } = useWebSocket(wsUrl, { onAudioOutput: handleAudioOutput });
 
   return (
     <div className="app-container">
@@ -182,7 +170,10 @@ function App() {
         </div>
       )}
 
-      <PetWindow onSend={sendText} />
+      {/* Main pet display using PhaserWrapper */}
+      <Suspense fallback={<div style={{ color: "#ffd700" }}>加载中...</div>}>
+        <PhaserWrapper />
+      </Suspense>
     </div>
   );
 }

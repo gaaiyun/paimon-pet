@@ -17,8 +17,6 @@ export interface GeneralSettings {
 export interface PetSettings {
   visualMode: "live2d" | "sprite";
   scale: number;
-  x: number;
-  y: number;
   animationSpeed: number;
   alwaysOnTop: boolean;
   clickThrough: boolean;

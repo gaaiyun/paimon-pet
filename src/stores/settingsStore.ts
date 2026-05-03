@@ -19,8 +19,6 @@ const defaultSettings: AppSettings = {
   pet: {
     visualMode: "live2d",
     scale: 1.0,
-    x: 0,
-    y: 0,
     animationSpeed: 1.0,
     alwaysOnTop: true,
     clickThrough: false,

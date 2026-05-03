@@ -1,0 +1,50 @@
+{
+    "id": "paimon",
+    "name": "paimon",
+    "imageSrc": "sprites/paimon/spritesheet.png",
+    "width": 1536,
+    "height": 1872,
+    "highestFrameMax": 8,
+    "totalSpriteLine": 9,
+    "credit": {
+        "socialMedia": "fan-made"
+    },
+    "states": {
+        "idle": {
+            "spriteLine": 1,
+            "frameMax": 6
+        },
+        "running-right": {
+            "spriteLine": 2,
+            "frameMax": 8
+        },
+        "running-left": {
+            "spriteLine": 3,
+            "frameMax": 8
+        },
+        "waving": {
+            "spriteLine": 4,
+            "frameMax": 4
+        },
+        "jumping": {
+            "spriteLine": 5,
+            "frameMax": 5
+        },
+        "failed": {
+            "spriteLine": 6,
+            "frameMax": 8
+        },
+        "waiting": {
+            "spriteLine": 7,
+            "frameMax": 6
+        },
+        "running": {
+            "spriteLine": 8,
+            "frameMax": 6
+        },
+        "review": {
+            "spriteLine": 9,
+            "frameMax": 6
+        }
+    }
+}

@@ -21,8 +21,6 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions) {
   // Store actions (pulled once — they are stable references from zustand)
   const addMessage = useChatStore((s) => s.addMessage);
   const setTyping = useChatStore((s) => s.setTyping);
-  const setExpression = usePetStore((s) => s.setExpression);
-  const setAnimation = usePetStore((s) => s.setAnimation);
   const setState = usePetStore((s) => s.setState);
 
   useEffect(() => {
@@ -34,12 +32,6 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions) {
       switch (msg.type) {
         case "text-output":
           addMessage("assistant", msg.data);
-          break;
-        case "expression":
-          setExpression(msg.data);
-          break;
-        case "motion":
-          setAnimation(`${msg.group}-${msg.index}`);
           break;
         case "state":
           setState(msg.data);
@@ -64,7 +56,7 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions) {
       ws.disconnect();
       serviceRef.current = null;
     };
-  }, [url, options, addMessage, setTyping, setExpression, setAnimation, setState]);
+  }, [url, options, addMessage, setTyping, setState]);
 
   const sendText = useCallback((text: string) => {
     serviceRef.current?.sendText(text);

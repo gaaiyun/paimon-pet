@@ -1,14 +1,4 @@
 export type PetState = "idle" | "listening" | "thinking" | "speaking" | "dragging";
-export type VisualMode = "live2d" | "sprite";
-
-export interface PetVisualState {
-  mode: VisualMode;
-  currentAnimation: string;
-  currentExpression: string;
-  scale: number;
-  position: { x: number; y: number };
-  isLipSyncing: boolean;
-}
 
 export interface ChatMessage {
   id: string;
