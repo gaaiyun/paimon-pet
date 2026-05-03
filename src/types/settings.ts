@@ -5,6 +5,7 @@ export interface AppSettings {
   ai: AiSettings;
   tts: TtsSettings;
   advanced: AdvancedSettings;
+  backendPaths: BackendPathsSettings;
 }
 
 export interface GeneralSettings {
@@ -53,4 +54,12 @@ export interface AdvancedSettings {
   logLevel: "debug" | "info" | "warn" | "error";
   backendPort: number;
   dataDirectory: string;
+}
+
+export interface BackendPathsSettings {
+  openclawPath: string;
+  aiPaimonDir: string;
+  vitsModelPath: string;
+  openLlmVtuberDir: string;
+  pythonPath: string;
 }

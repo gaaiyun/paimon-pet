@@ -11,6 +11,7 @@ pub struct AppSettings {
     pub ai: AiSettings,
     pub tts: TtsSettings,
     pub advanced: AdvancedSettings,
+    pub backend_paths: BackendPathsSettings,
 }
 
 impl Default for AppSettings {
@@ -22,6 +23,7 @@ impl Default for AppSettings {
             ai: AiSettings::default(),
             tts: TtsSettings::default(),
             advanced: AdvancedSettings::default(),
+            backend_paths: BackendPathsSettings::default(),
         }
     }
 }
@@ -152,6 +154,36 @@ impl Default for AdvancedSettings {
             log_level: "info".to_string(),
             backend_port: 12393,
             data_directory: String::new(),
+        }
+    }
+}
+
+/// Backend service paths configuration.
+///
+/// These paths tell the application where to find external tools
+/// and project directories required to run the backend services.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackendPathsSettings {
+    /// Path to the openclaw binary (used for health-check only).
+    pub openclaw_path: String,
+    /// Path to the ai-paimon project directory (for VITS server).
+    pub ai_paimon_dir: String,
+    /// Path to the VITS model file (paimon.pth).
+    pub vits_model_path: String,
+    /// Path to the Open-LLM-VTuber project directory.
+    pub open_llm_vtuber_dir: String,
+    /// Path to the Python executable.
+    pub python_path: String,
+}
+
+impl Default for BackendPathsSettings {
+    fn default() -> Self {
+        Self {
+            openclaw_path: "openclaw".to_string(),
+            ai_paimon_dir: String::new(),
+            vits_model_path: "./paimon.pth".to_string(),
+            open_llm_vtuber_dir: String::new(),
+            python_path: "python".to_string(),
         }
     }
 }

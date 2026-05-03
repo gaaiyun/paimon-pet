@@ -6,6 +6,9 @@ mod window;
 
 use audio::capture::AudioCapture;
 use commands::audio_cmd::CaptureState;
+use commands::backend_cmd::ServiceManagerState;
+
+use backend::process::ServiceManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +18,7 @@ pub fn run() {
             // Single instance callback - focus existing window
         }))
         .manage(CaptureState::new(AudioCapture::new()))
+        .manage(ServiceManagerState::new(ServiceManager::new()))
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -34,6 +38,9 @@ pub fn run() {
             commands::audio_cmd::stop_capture,
             commands::backend_cmd::check_backend_health,
             commands::backend_cmd::start_backend,
+            commands::backend_cmd::check_all_services,
+            commands::backend_cmd::start_all_services,
+            commands::backend_cmd::stop_all_services,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

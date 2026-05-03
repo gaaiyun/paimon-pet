@@ -3,6 +3,7 @@ import { GeneralSettings } from "./GeneralSettings";
 import { PetSettings } from "./PetSettings";
 import { VoiceSettings } from "./VoiceSettings";
 import { AISettings } from "./AISettings";
+import { BackendSettings } from "./BackendSettings";
 import { useSettingsStore } from "../stores/settingsStore";
 
 function AdvancedSettings() {
@@ -91,6 +92,7 @@ export function SettingsPanel() {
           <Tabs.Tab value="pet" style={{ color: "#e0e0e0" }}>宠物</Tabs.Tab>
           <Tabs.Tab value="voice" style={{ color: "#e0e0e0" }}>语音</Tabs.Tab>
           <Tabs.Tab value="ai" style={{ color: "#e0e0e0" }}>AI</Tabs.Tab>
+          <Tabs.Tab value="backend" style={{ color: "#e0e0e0" }}>后端</Tabs.Tab>
           <Tabs.Tab value="advanced" style={{ color: "#e0e0e0" }}>高级</Tabs.Tab>
           <Tabs.Tab value="about" style={{ color: "#e0e0e0" }}>关于</Tabs.Tab>
         </Tabs.List>
@@ -99,6 +101,7 @@ export function SettingsPanel() {
         <Tabs.Panel value="pet" pt="md"><PetSettings /></Tabs.Panel>
         <Tabs.Panel value="voice" pt="md"><VoiceSettings /></Tabs.Panel>
         <Tabs.Panel value="ai" pt="md"><AISettings /></Tabs.Panel>
+        <Tabs.Panel value="backend" pt="md"><BackendSettings /></Tabs.Panel>
         <Tabs.Panel value="advanced" pt="md"><AdvancedSettings /></Tabs.Panel>
         <Tabs.Panel value="about" pt="md"><AboutTab /></Tabs.Panel>
       </Tabs>

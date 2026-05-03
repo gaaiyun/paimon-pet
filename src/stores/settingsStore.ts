@@ -7,6 +7,7 @@ import type {
   AiSettings,
   TtsSettings,
   AdvancedSettings,
+  BackendPathsSettings,
 } from "../types/settings";
 
 const defaultSettings: AppSettings = {
@@ -52,6 +53,13 @@ const defaultSettings: AppSettings = {
     backendPort: 12393,
     dataDirectory: "",
   },
+  backendPaths: {
+    openclawPath: "openclaw",
+    aiPaimonDir: "",
+    vitsModelPath: "./paimon.pth",
+    openLlmVtuberDir: "",
+    pythonPath: "python",
+  },
 };
 
 interface SettingsStore {
@@ -63,6 +71,7 @@ interface SettingsStore {
   updateAiSettings: (partial: Partial<AiSettings>) => void;
   updateTtsSettings: (partial: Partial<TtsSettings>) => void;
   updateAdvancedSettings: (partial: Partial<AdvancedSettings>) => void;
+  updateBackendPaths: (partial: Partial<BackendPathsSettings>) => void;
   resetToDefaults: () => void;
 }
 
@@ -97,6 +106,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   updateAdvancedSettings: (partial) =>
     set((prev) => ({
       settings: { ...prev.settings, advanced: { ...prev.settings.advanced, ...partial } },
+    })),
+
+  updateBackendPaths: (partial) =>
+    set((prev) => ({
+      settings: { ...prev.settings, backendPaths: { ...prev.settings.backendPaths, ...partial } },
     })),
 
   resetToDefaults: () => set({ settings: { ...defaultSettings } }),
