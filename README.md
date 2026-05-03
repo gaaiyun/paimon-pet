@@ -182,15 +182,28 @@ uv run run_server.py
 
 > 如果跳过此步，系统会自动使用 Edge TTS 作为备选（声音不是派蒙的）
 
-VITS 需要派蒙的语音模型文件 `paimon.pth`：
+VITS 需要派蒙的语音模型文件。模型和配置可从 HuggingFace 自动下载：
 
-1. 将 `paimon.pth` 放到 `ai-paimon/` 项目根目录
-2. 启动 VITS 服务器：
-   ```bash
-   cd ai-paimon
-   python src/vits_server/server.py
-   # 默认监听端口：8020
-   ```
+```bash
+cd ai-paimon
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 下载模型（自动下载到 models/vits/paimon/）
+python -c "
+from huggingface_hub import hf_hub_download
+hf_hub_download('hcoli/vits_models', 'vits/paimon/paimon6k_390000.pth', local_dir='./models')
+hf_hub_download('hcoli/vits_models', 'vits/paimon/paimon6k.json', local_dir='./models')
+print('Model downloaded!')
+"
+
+# 启动 VITS 服务器
+python src/vits_server/server.py
+# 默认监听端口：8020，自动检测 CUDA
+```
+
+> 如果跳过此步，系统会自动使用 Edge TTS 作为备选（声音不是派蒙的）
 
 ### 第五步：安装 PaimonPet
 
