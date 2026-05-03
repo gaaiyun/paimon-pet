@@ -171,11 +171,22 @@ cd Open-LLM-VTuber
 
 # 安装依赖（自动创建虚拟环境）
 uv sync
+```
 
-# 测试启动
+然后配置你的 MiniMax API Key（从 [MiniMax 开放平台](https://platform.minimax.chat/) 获取）：
+
+```bash
+# 编辑 conf.yaml，填入你的 MiniMax API Key
+# llm_api_key: 'your-minimax-api-key'
+# model: 'MiniMax-M2.7'
+# base_url: 'https://api.minimax.chat/v1'
+
+# 复制参考配置（从 paimon-pet 仓库）
+cp ../paimon-pet/backend/conf.yaml ./
+
+# 启动服务器
 uv run run_server.py
 # 默认监听端口：12393
-# 访问 http://localhost:12393 验证是否正常
 ```
 
 ### 第四步：安装 VITS 派蒙声音 (可选)

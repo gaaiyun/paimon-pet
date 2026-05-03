@@ -6,7 +6,6 @@ system_config:
   port: 12393
   config_alts_dir: 'characters'
   tool_prompts:
-    live2d_expression_prompt: 'live2d_expression_prompt'
     group_conversation_prompt: 'group_conversation_prompt'
     mcp_prompt: 'mcp_prompt'
     proactive_speak_prompt: 'proactive_speak_prompt'
@@ -14,7 +13,7 @@ system_config:
 character_config:
   conf_name: 'paimon'
   conf_uid: 'paimon_001'
-  live2d_model_name: 'paimon'
+  live2d_model_name: 'mao_pro'
   character_name: '派蒙'
   avatar: ''
   human_name: '旅行者'
@@ -67,11 +66,11 @@ character_config:
 
     llm_configs:
       openai_compatible_llm:
-        base_url: 'http://127.0.0.1:18789/v1'
-        llm_api_key: 'not-needed'
+        base_url: 'https://api.minimax.chat/v1'
+        llm_api_key: 'YOUR_MINIMAX_API_KEY'
         organization_id: null
         project_id: null
-        model: 'openclaw:main'
+        model: 'MiniMax-M2.7'
         temperature: 0.7
         interrupt_method: 'user'
 
@@ -80,7 +79,7 @@ character_config:
 
     sherpa_onnx_asr:
       model_type: 'sense_voice'
-      sense_voice: './models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.int8.onnx'
+      sense_voice: './models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.onnx'
       tokens: './models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/tokens.txt'
       num_threads: 4
       use_itn: True
