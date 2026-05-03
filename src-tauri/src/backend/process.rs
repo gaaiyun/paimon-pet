@@ -28,19 +28,25 @@ impl ServiceManager {
         }
     }
 
-    /// Check whether a service is reachable by sending a GET request to
-    /// `http://localhost:{port}/health` with a short timeout.
+    /// Check whether a service is reachable by sending a GET request.
+    /// Tries `/health` first, then falls back to root `/`.
     pub fn is_service_running(port: u16) -> bool {
-        let url = format!("http://127.0.0.1:{}/health", port);
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(HEALTH_CHECK_TIMEOUT_SECS))
             .build();
 
         match client {
-            Ok(c) => match c.get(&url).send() {
-                Ok(resp) => resp.status().is_success(),
-                Err(_) => false,
-            },
+            Ok(c) => {
+                for path in &["/health", "/"] {
+                    let url = format!("http://127.0.0.1:{}{}", port, path);
+                    if let Ok(resp) = c.get(&url).send() {
+                        if resp.status().is_success() {
+                            return true;
+                        }
+                    }
+                }
+                false
+            }
             Err(_) => false,
         }
     }

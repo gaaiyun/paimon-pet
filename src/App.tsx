@@ -97,6 +97,7 @@ function App() {
       const result = await invoke<string>("start_all_services", {
         pythonPath: paths.pythonPath,
         aiPaimonDir: paths.aiPaimonDir,
+        vitsModelPath: paths.vitsModelPath,
         vtuberDir: paths.openLlmVtuberDir,
       });
       setStartMessage(result);
