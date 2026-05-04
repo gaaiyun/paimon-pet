@@ -58,14 +58,17 @@ export function useWebSocket(url: string, options?: UseWebSocketOptions) {
         case "audio":
           if (typeof msg.audio === "string") {
             optionsRef.current?.onAudioOutput?.(msg.audio);
-          }
-          if (msg.display_text && typeof (msg.display_text as Record<string, unknown>).text === "string") {
-            const dt = msg.display_text as { text: string };
-            if (dt.text && dt.text.trim()) {
-              if (inChainRef.current) {
-                appendToLastAssistant(dt.text);
-              } else {
-                addMessage("assistant", dt.text);
+            // Only show display_text when there is actual TTS audio
+            if (msg.display_text && typeof (msg.display_text as Record<string, unknown>).text === "string") {
+              const raw = (msg.display_text as { text: string }).text;
+              // Strip emotion tags like [joy], [smirk], etc.
+              const cleaned = raw.replace(/\[[\w]+\]\s*/g, "").trim();
+              if (cleaned) {
+                if (inChainRef.current) {
+                  appendToLastAssistant(cleaned);
+                } else {
+                  addMessage("assistant", cleaned);
+                }
               }
             }
           }

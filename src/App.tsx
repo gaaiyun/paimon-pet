@@ -87,6 +87,15 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Scroll to bottom when reopening chat panel
+  useEffect(() => {
+    if (chatOpen) {
+      requestAnimationFrame(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "instant" });
+      });
+    }
+  }, [chatOpen]);
+
   // Auto-hide chat after idle
   const resetIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
