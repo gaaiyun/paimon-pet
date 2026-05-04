@@ -6,6 +6,7 @@ interface ChatStore {
   isTyping: boolean;
 
   addMessage: (role: ChatMessage["role"], text: string) => void;
+  appendToLastAssistant: (text: string) => void;
   setTyping: (isTyping: boolean) => void;
   clearMessages: () => void;
 }
@@ -26,6 +27,23 @@ export const useChatStore = create<ChatStore>((set) => ({
         },
       ],
     })),
+
+  appendToLastAssistant: (text) =>
+    set((prev) => {
+      const msgs = [...prev.messages];
+      const lastIdx = msgs.length - 1;
+      if (lastIdx >= 0 && msgs[lastIdx].role === "assistant") {
+        msgs[lastIdx] = { ...msgs[lastIdx], text: msgs[lastIdx].text + text };
+      } else {
+        msgs.push({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text,
+          timestamp: Date.now(),
+        });
+      }
+      return { messages: msgs };
+    }),
 
   setTyping: (isTyping) => set({ isTyping }),
 

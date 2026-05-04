@@ -12,6 +12,7 @@ export interface GeneralSettings {
   language: "zh-CN" | "en";
   theme: "dark" | "light" | "system";
   autostart: boolean;
+  muted: boolean;
 }
 
 export interface PetSettings {

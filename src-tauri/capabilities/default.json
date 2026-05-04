@@ -3,10 +3,18 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "pet",
-    "settings"
+    "pet"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-start-dragging",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-always-on-top",
+    "core:event:default",
+    "log:default",
+    "store:default"
   ]
 }

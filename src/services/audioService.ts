@@ -29,9 +29,7 @@ export class AudioService {
 
   /** Set the volume, clamped to [0, 1]. */
   set volume(value: number) {
-    const ctx = this.getAudioContext();
-    // getAudioContext initialises gainNode as well
-    void ctx; // just to satisfy linter that ctx is used
+    this.getAudioContext();
     if (this.gainNode) {
       this.gainNode.gain.value = Math.max(0, Math.min(1, value));
     }

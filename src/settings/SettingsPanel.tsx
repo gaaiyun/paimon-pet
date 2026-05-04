@@ -66,7 +66,30 @@ function AboutTab() {
   );
 }
 
-export function SettingsPanel() {
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        position: "absolute",
+        top: 12,
+        right: 14,
+        border: 0,
+        borderRadius: 999,
+        padding: "4px 10px",
+        background: "rgba(255,255,255,0.08)",
+        color: "#aaa",
+        fontSize: 12,
+        cursor: "pointer",
+        lineHeight: 1,
+      }}
+    >
+      关闭
+    </button>
+  );
+}
+
+export function SettingsPanel({ onClose }: { onClose?: () => void }) {
   return (
     <div
       style={{
@@ -76,8 +99,10 @@ export function SettingsPanel() {
         minHeight: "500px",
         width: "420px",
         color: "#e0e0e0",
+        position: "relative",
       }}
     >
+      {onClose && <CloseButton onClick={onClose} />}
       <Text
         size="xl"
         fw={700}

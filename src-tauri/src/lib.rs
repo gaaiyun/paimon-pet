@@ -41,6 +41,8 @@ pub fn run() {
             commands::backend_cmd::check_all_services,
             commands::backend_cmd::start_all_services,
             commands::backend_cmd::stop_all_services,
+            commands::backend_cmd::get_cursor_pos,
+            commands::backend_cmd::detect_project_paths,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

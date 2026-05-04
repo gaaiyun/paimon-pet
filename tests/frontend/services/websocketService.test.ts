@@ -1,48 +1,33 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { WebSocketService, parseServerMessage } from "../../../src/services/websocketService";
-import type { ServerMessage } from "../../../src/types/messages";
-
-// ---------------------------------------------------------------------------
-// parseServerMessage (pure function — no mocking needed)
-// ---------------------------------------------------------------------------
 
 describe("parseServerMessage", () => {
-  it("parses a valid text-output message", () => {
-    const raw = JSON.stringify({ type: "text-output", data: "hello" });
+  it("parses a valid full-text message", () => {
+    const raw = JSON.stringify({ type: "full-text", text: "hello" });
     const msg = parseServerMessage(raw);
-    expect(msg).toEqual({ type: "text-output", data: "hello" });
+    expect(msg).toEqual({ type: "full-text", text: "hello" });
   });
 
-  it("parses a valid expression message", () => {
-    const raw = JSON.stringify({ type: "expression", data: "joy" });
+  it("parses a valid audio message", () => {
+    const raw = JSON.stringify({ type: "audio", audio: "base64data", display_text: { text: "hi" } });
     const msg = parseServerMessage(raw);
-    expect(msg).toEqual({ type: "expression", data: "joy" });
+    expect(msg).toEqual({ type: "audio", audio: "base64data", display_text: { text: "hi" } });
   });
 
-  it("parses a valid motion message", () => {
-    const raw = JSON.stringify({ type: "motion", group: "tap", index: 3 });
+  it("parses a heartbeat-ack message", () => {
+    const raw = JSON.stringify({ type: "heartbeat-ack" });
     const msg = parseServerMessage(raw);
-    expect(msg).toEqual({ type: "motion", group: "tap", index: 3 });
+    expect(msg).toEqual({ type: "heartbeat-ack" });
   });
 
-  it("parses a valid state message", () => {
-    const raw = JSON.stringify({ type: "state", data: "thinking" });
+  it("parses a control message", () => {
+    const raw = JSON.stringify({ type: "control", text: "conversation-chain-start" });
     const msg = parseServerMessage(raw);
-    expect(msg).toEqual({ type: "state", data: "thinking" });
-  });
-
-  it("parses a pong message", () => {
-    const raw = JSON.stringify({ type: "pong" });
-    const msg = parseServerMessage(raw);
-    expect(msg).toEqual({ type: "pong" });
+    expect(msg).toEqual({ type: "control", text: "conversation-chain-start" });
   });
 
   it("returns null for invalid JSON", () => {
     expect(parseServerMessage("not json")).toBeNull();
-  });
-
-  it("returns null for empty string", () => {
-    expect(parseServerMessage("")).toBeNull();
   });
 
   it("returns null for JSON without a type field", () => {
@@ -55,10 +40,6 @@ describe("parseServerMessage", () => {
     expect(parseServerMessage("null")).toBeNull();
   });
 });
-
-// ---------------------------------------------------------------------------
-// WebSocketService (mocked WebSocket)
-// ---------------------------------------------------------------------------
 
 describe("WebSocketService", () => {
   let service: WebSocketService;
@@ -75,14 +56,11 @@ describe("WebSocketService", () => {
   beforeEach(() => {
     service = new WebSocketService();
 
-    // Build a mock that will be the exact object returned by the constructor.
-    // Because the constructor returns this object explicitly, the service's
-    // internal `this.ws` reference IS `mockWs` — no property-copying gap.
     mockWs = {
-      readyState: 0, // CONNECTING
+      readyState: 0,
       send: vi.fn(),
       close: vi.fn(function (this: typeof mockWs) {
-        this.readyState = 3; // CLOSED
+        this.readyState = 3;
         if (this.onclose) this.onclose({});
       }),
       onopen: null,
@@ -91,66 +69,108 @@ describe("WebSocketService", () => {
       onmessage: null,
     };
 
-    // Constructor that returns the shared mockWs object directly.
-    // When a constructor returns an object, `new Constructor()` uses that object.
     function MockWS() {
       return mockWs;
     }
-    // Attach readyState constants (service reads WebSocket.OPEN, etc.)
     MockWS.CONNECTING = 0;
     MockWS.OPEN = 1;
     MockWS.CLOSING = 2;
     MockWS.CLOSED = 3;
 
     vi.stubGlobal("WebSocket", MockWS);
+    vi.useFakeTimers();
   });
 
-  // After each test, clean up stubs and disconnect the service to avoid
-  // lingering reconnect timers.
   afterEach(() => {
     service.disconnect();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
-  // --- sendText -----------------------------------------------------------
-
   describe("sendText", () => {
-    it("produces correct JSON for a text-input message", () => {
+    it("sends text-input message with text field", () => {
       service.connect("ws://localhost:1234");
-      // Simulate successful connection
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
 
       service.sendText("hello paimon");
 
       expect(mockWs.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "text-input", data: "hello paimon" }),
+        JSON.stringify({ type: "text-input", text: "hello paimon" }),
       );
     });
   });
 
-  // --- interrupt ----------------------------------------------------------
+  describe("sendAudioFloat32", () => {
+    it("sends mic-audio-data followed by mic-audio-end", () => {
+      service.connect("ws://localhost:1234");
+      mockWs.readyState = 1;
+      mockWs.onopen!();
+
+      const samples = new Float32Array([0.1, 0.2, 0.3]);
+      service.sendAudioFloat32(samples);
+
+      expect(mockWs.send).toHaveBeenCalledTimes(2);
+      // First call: mic-audio-data with float32 values
+      const firstCall = JSON.parse(mockWs.send.mock.calls[0][0] as string);
+      expect(firstCall.type).toBe("mic-audio-data");
+      expect(firstCall.audio).toHaveLength(3);
+      expect(firstCall.audio[0]).toBeCloseTo(0.1);
+      expect(firstCall.audio[1]).toBeCloseTo(0.2);
+      expect(firstCall.audio[2]).toBeCloseTo(0.3);
+      // Second call: mic-audio-end
+      expect(mockWs.send).toHaveBeenCalledWith(
+        JSON.stringify({ type: "mic-audio-end" }),
+      );
+    });
+  });
 
   describe("interrupt", () => {
-    it("produces correct JSON for an interrupt message", () => {
+    it("sends interrupt-signal message", () => {
       service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
 
       service.interrupt();
 
       expect(mockWs.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "interrupt" }),
+        JSON.stringify({ type: "interrupt-signal", text: "" }),
       );
     });
   });
 
-  // --- Connection failure handling ----------------------------------------
+  describe("heartbeat", () => {
+    it("sends heartbeat at regular intervals after connecting", () => {
+      service.connect("ws://localhost:1234");
+      mockWs.readyState = 1;
+      mockWs.onopen!();
+
+      // Advance past the heartbeat interval
+      vi.advanceTimersByTime(30_000);
+
+      expect(mockWs.send).toHaveBeenCalledWith(
+        JSON.stringify({ type: "heartbeat" }),
+      );
+    });
+
+    it("stops heartbeat on disconnect", () => {
+      service.connect("ws://localhost:1234");
+      mockWs.readyState = 1;
+      mockWs.onopen!();
+
+      service.disconnect();
+
+      const sendCount = mockWs.send.mock.calls.length;
+      vi.advanceTimersByTime(60_000);
+
+      // No additional sends after disconnect
+      expect(mockWs.send.mock.calls.length).toBe(sendCount);
+    });
+  });
 
   describe("connection failure", () => {
-    it("handles connection failure gracefully (constructor throws)", () => {
-      // Make the WebSocket constructor throw
+    it("handles connection failure gracefully", () => {
       vi.stubGlobal(
         "WebSocket",
         vi.fn(() => {
@@ -161,16 +181,11 @@ describe("WebSocketService", () => {
       const stateSpy = vi.fn();
       service.onStateChange(stateSpy);
 
-      // Should not throw
       expect(() => service.connect("ws://bad-host:9999")).not.toThrow();
-
-      // State should have transitioned to disconnected
       expect(stateSpy).toHaveBeenCalledWith("connecting");
       expect(stateSpy).toHaveBeenCalledWith("disconnected");
     });
   });
-
-  // --- isConnected --------------------------------------------------------
 
   describe("isConnected", () => {
     it("returns false before connection", () => {
@@ -179,21 +194,19 @@ describe("WebSocketService", () => {
 
     it("returns true after successful connection", () => {
       service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
       expect(service.isConnected()).toBe(true);
     });
 
     it("returns false after disconnect", () => {
       service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
       service.disconnect();
       expect(service.isConnected()).toBe(false);
     });
   });
-
-  // --- Message handling ---------------------------------------------------
 
   describe("onMessage", () => {
     it("dispatches parsed messages to the handler", () => {
@@ -201,13 +214,12 @@ describe("WebSocketService", () => {
       service.onMessage(handler);
 
       service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
 
-      const serverMsg: ServerMessage = { type: "text-output", data: "hi" };
-      mockWs.onmessage!({ data: JSON.stringify(serverMsg) });
+      mockWs.onmessage!({ data: JSON.stringify({ type: "full-text", text: "hi" }) });
 
-      expect(handler).toHaveBeenCalledWith(serverMsg);
+      expect(handler).toHaveBeenCalledWith({ type: "full-text", text: "hi" });
     });
 
     it("ignores malformed messages", () => {
@@ -215,59 +227,11 @@ describe("WebSocketService", () => {
       service.onMessage(handler);
 
       service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
+      mockWs.readyState = 1;
       mockWs.onopen!();
 
       mockWs.onmessage!({ data: "not-json" });
       expect(handler).not.toHaveBeenCalled();
-    });
-  });
-
-  // --- State changes ------------------------------------------------------
-
-  describe("onStateChange", () => {
-    it("notifies state changes through the handler", () => {
-      const states: string[] = [];
-      service.onStateChange((s) => states.push(s));
-
-      service.connect("ws://localhost:1234");
-      mockWs.readyState = 1; // OPEN
-      mockWs.onopen!();
-
-      // connect() calls disconnect() first (disconnected), then connecting,
-      // then the mock onopen fires (connected).
-      expect(states).toContain("connecting");
-      expect(states).toContain("connected");
-    });
-  });
-
-  // --- sendAudio / ping ---------------------------------------------------
-
-  describe("sendAudio", () => {
-    it("sends an audio-input message", () => {
-      service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
-      mockWs.onopen!();
-
-      service.sendAudio("base64data");
-
-      expect(mockWs.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "audio-input", data: "base64data" }),
-      );
-    });
-  });
-
-  describe("ping", () => {
-    it("sends a ping message", () => {
-      service.connect("ws://localhost:1234");
-      mockWs.readyState = WebSocket.OPEN;
-      mockWs.onopen!();
-
-      service.ping();
-
-      expect(mockWs.send).toHaveBeenCalledWith(
-        JSON.stringify({ type: "ping" }),
-      );
     });
   });
 });

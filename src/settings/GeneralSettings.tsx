@@ -49,6 +49,14 @@ export function GeneralSettings() {
           updateGeneral({ autostart: event.currentTarget.checked })
         }
       />
+
+      <Switch
+        label="静音 / Mute"
+        checked={general.muted}
+        onChange={(event) =>
+          updateGeneral({ muted: event.currentTarget.checked })
+        }
+      />
     </Stack>
   );
 }

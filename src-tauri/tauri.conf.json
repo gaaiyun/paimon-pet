@@ -10,16 +10,20 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "pet",
         "title": "PaimonPet",
-        "width": 400,
-        "height": 500,
+        "width": 340,
+        "height": 560,
+        "minWidth": 280,
+        "minHeight": 400,
         "transparent": true,
         "alwaysOnTop": true,
-        "resizable": false,
+        "resizable": true,
         "decorations": false,
+        "shadow": false,
         "skipTaskbar": true,
         "center": true
       }

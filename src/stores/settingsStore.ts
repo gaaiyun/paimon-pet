@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   AppSettings,
   GeneralSettings,
@@ -15,10 +16,11 @@ const defaultSettings: AppSettings = {
     language: "zh-CN",
     theme: "dark",
     autostart: false,
+    muted: false,
   },
   pet: {
-    visualMode: "live2d",
-    scale: 1.0,
+    visualMode: "sprite",
+    scale: 0.7,
     animationSpeed: 1.0,
     alwaysOnTop: true,
     clickThrough: false,
@@ -54,7 +56,7 @@ const defaultSettings: AppSettings = {
   backendPaths: {
     openclawPath: "openclaw",
     aiPaimonDir: "",
-    vitsModelPath: "models/vits/paimon/paimon6k_390000.pth",
+    vitsModelPath: "",
     openLlmVtuberDir: "",
     pythonPath: "python",
   },
@@ -73,43 +75,59 @@ interface SettingsStore {
   resetToDefaults: () => void;
 }
 
-export const useSettingsStore = create<SettingsStore>((set) => ({
-  settings: { ...defaultSettings },
+export const useSettingsStore = create<SettingsStore>()(
+  persist(
+    (set) => ({
+      settings: { ...defaultSettings },
 
-  updateGeneral: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, general: { ...prev.settings.general, ...partial } },
-    })),
+      updateGeneral: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, general: { ...prev.settings.general, ...partial } },
+        })),
 
-  updatePetSettings: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, pet: { ...prev.settings.pet, ...partial } },
-    })),
+      updatePetSettings: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, pet: { ...prev.settings.pet, ...partial } },
+        })),
 
-  updateVoiceSettings: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, voice: { ...prev.settings.voice, ...partial } },
-    })),
+      updateVoiceSettings: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, voice: { ...prev.settings.voice, ...partial } },
+        })),
 
-  updateAiSettings: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, ai: { ...prev.settings.ai, ...partial } },
-    })),
+      updateAiSettings: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, ai: { ...prev.settings.ai, ...partial } },
+        })),
 
-  updateTtsSettings: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, tts: { ...prev.settings.tts, ...partial } },
-    })),
+      updateTtsSettings: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, tts: { ...prev.settings.tts, ...partial } },
+        })),
 
-  updateAdvancedSettings: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, advanced: { ...prev.settings.advanced, ...partial } },
-    })),
+      updateAdvancedSettings: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, advanced: { ...prev.settings.advanced, ...partial } },
+        })),
 
-  updateBackendPaths: (partial) =>
-    set((prev) => ({
-      settings: { ...prev.settings, backendPaths: { ...prev.settings.backendPaths, ...partial } },
-    })),
+      updateBackendPaths: (partial) =>
+        set((prev) => ({
+          settings: { ...prev.settings, backendPaths: { ...prev.settings.backendPaths, ...partial } },
+        })),
 
-  resetToDefaults: () => set({ settings: { ...defaultSettings } }),
-}));
+      resetToDefaults: () => set({ settings: { ...defaultSettings } }),
+    }),
+    {
+      name: "paimon-pet-settings",
+      storage: createJSONStorage(() => {
+        // Use Tauri Store in production, localStorage in browser/test
+        if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+          // Tauri environment — localStorage still works for persist middleware
+          return localStorage;
+        }
+        return localStorage;
+      }),
+      partialize: (state) => ({ settings: state.settings }),
+    },
+  ),
+);

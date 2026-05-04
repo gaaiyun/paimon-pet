@@ -1,17 +1,14 @@
-import type { ClientMessage, ServerMessage } from "../types/messages";
-
 /** Connection state reported by WebSocketService */
 export type ConnectionState = "disconnected" | "connecting" | "connected";
 
 /**
  * Parses a raw JSON string into a ServerMessage, or returns null on failure.
- * This is a pure utility function (no side effects).
  */
-export function parseServerMessage(raw: string): ServerMessage | null {
+export function parseServerMessage(raw: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object" && typeof parsed.type === "string") {
-      return parsed as ServerMessage;
+      return parsed as Record<string, unknown>;
     }
     return null;
   } catch {
@@ -21,30 +18,25 @@ export function parseServerMessage(raw: string): ServerMessage | null {
 
 /**
  * WebSocketService encapsulates a WebSocket connection with:
- *  - Automatic reconnection with exponential backoff (1 s initial, 2x each retry, max 30 s)
+ *  - Automatic reconnection with exponential backoff
  *  - Typed message sending / receiving
- *  - State change callbacks
+ *  - Heartbeat keep-alive
  */
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private url: string = "";
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
-  // Exponential backoff parameters
   private static readonly INITIAL_DELAY = 1000;
   private static readonly MAX_DELAY = 30000;
   private static readonly BACKOFF_FACTOR = 2;
+  private static readonly HEARTBEAT_INTERVAL = 30_000;
 
-  // Callbacks
-  private messageHandler: ((msg: ServerMessage) => void) | null = null;
+  private messageHandler: ((msg: Record<string, unknown>) => void) | null = null;
   private stateChangeHandler: ((state: ConnectionState) => void) | null = null;
 
-  // -----------------------------------------------------------------------
-  // Public API
-  // -----------------------------------------------------------------------
-
-  /** Open a WebSocket connection to `url`. Closes any existing connection first. */
   connect(url: string): void {
     this.url = url;
     this.disconnect();
@@ -53,8 +45,8 @@ export class WebSocketService {
 
     try {
       this.ws = new WebSocket(url);
-    } catch {
-      // Invalid URL or environment without WebSocket support
+    } catch (err) {
+      console.error("[WebSocket] Failed to create WebSocket:", err);
       this.setConnectionState("disconnected");
       this.scheduleReconnect();
       return;
@@ -63,15 +55,17 @@ export class WebSocketService {
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
       this.setConnectionState("connected");
+      this.startHeartbeat();
     };
 
     this.ws.onclose = () => {
       this.setConnectionState("disconnected");
+      this.stopHeartbeat();
       this.scheduleReconnect();
     };
 
     this.ws.onerror = () => {
-      // onclose will fire after onerror, so reconnect logic lives there
+      console.error("[WebSocket] Error occurred");
     };
 
     this.ws.onmessage = (event: MessageEvent) => {
@@ -82,11 +76,10 @@ export class WebSocketService {
     };
   }
 
-  /** Close the connection and cancel any pending reconnect. */
   disconnect(): void {
     this.clearReconnectTimer();
+    this.stopHeartbeat();
     if (this.ws) {
-      // Remove listeners to prevent the onclose handler from triggering reconnect
       this.ws.onopen = null;
       this.ws.onclose = null;
       this.ws.onerror = null;
@@ -99,51 +92,63 @@ export class WebSocketService {
     this.setConnectionState("disconnected");
   }
 
-  /** Register a handler for incoming ServerMessages. */
-  onMessage(handler: (msg: ServerMessage) => void): void {
+  onMessage(handler: (msg: Record<string, unknown>) => void): void {
     this.messageHandler = handler;
   }
 
-  /** Register a handler for connection state changes. */
   onStateChange(handler: (state: ConnectionState) => void): void {
     this.stateChangeHandler = handler;
   }
 
-  /** Whether the socket is currently open. */
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
-  /** Send a typed ClientMessage over the wire as JSON. */
-  send(msg: ClientMessage): void {
+  /** Send a text message through the unified protocol. */
+  sendText(text: string): void {
+    this.sendRaw({ type: "text-input", text });
+  }
+
+  /** Send Float32 PCM audio data followed by an end signal. */
+  sendAudioFloat32(samples: Float32Array): void {
+    this.sendRaw({ type: "mic-audio-data", audio: Array.from(samples) });
+    this.sendRaw({ type: "mic-audio-end" });
+  }
+
+  /** Send an interrupt signal. */
+  interrupt(): void {
+    this.sendRaw({ type: "interrupt-signal", text: "" });
+  }
+
+  /** Acknowledge playback completion so the backend can finalize the turn. */
+  sendPlaybackComplete(): void {
+    this.sendRaw({ type: "frontend-playback-complete" });
+  }
+
+  /** Send heartbeat keep-alive. */
+  ping(): void {
+    this.sendRaw({ type: "heartbeat" });
+  }
+
+  private sendRaw(payload: Record<string, unknown>): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(msg));
+      this.ws.send(JSON.stringify(payload));
     }
   }
 
-  /** Convenience: send a text-input message. */
-  sendText(text: string): void {
-    this.send({ type: "text-input", data: text });
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      this.ping();
+    }, WebSocketService.HEARTBEAT_INTERVAL);
   }
 
-  /** Convenience: send an audio-input message (base64 encoded). */
-  sendAudio(base64: string): void {
-    this.send({ type: "audio-input", data: base64 });
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer !== null) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
-
-  /** Send an interrupt message to the server. */
-  interrupt(): void {
-    this.send({ type: "interrupt" });
-  }
-
-  /** Send a ping keep-alive. */
-  ping(): void {
-    this.send({ type: "ping" });
-  }
-
-  // -----------------------------------------------------------------------
-  // Private helpers
-  // -----------------------------------------------------------------------
 
   private setConnectionState(state: ConnectionState): void {
     if (this.stateChangeHandler) {

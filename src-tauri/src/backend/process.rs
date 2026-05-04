@@ -117,9 +117,8 @@ impl ServiceManager {
 
     /// Start all backend services in the correct dependency order.
     ///
-    /// 1. Checks whether OpenClaw is running (returns error if not).
+    /// 1. Checks whether Open-LLM-VTuber is running (returns error if not).
     /// 2. Starts VITS if it is not already running, then waits 3 seconds.
-    /// 3. Starts VTuber if it is not already running, then waits 5 seconds.
     ///
     /// Returns a human-readable status summary on success.
     pub fn start_all(
@@ -129,10 +128,10 @@ impl ServiceManager {
         vits_model_path: &str,
         vtuber_dir: &str,
     ) -> Result<String, String> {
-        // Step 1: OpenClaw must be running already.
-        if !self.check_openclaw() {
+        // Step 1: Open-LLM-VTuber must be running already.
+        if !self.check_vtuber() {
             return Err(
-                "OpenClaw gateway is not running on port 18789. Please start it first.".to_string(),
+                "Open-LLM-VTuber server is not running on port 12393. Please start it first.".to_string(),
             );
         }
 
@@ -141,24 +140,13 @@ impl ServiceManager {
             "already running".to_string()
         } else {
             let pid = self.start_vits(python_path, ai_paimon_dir, vits_model_path)?;
-            // Give VITS a few seconds to initialise.
             std::thread::sleep(std::time::Duration::from_secs(3));
             format!("started (PID {})", pid)
         };
 
-        // Step 3: Start VTuber if not running.
-        let vtuber_status = if self.check_vtuber() {
-            "already running".to_string()
-        } else {
-            let pid = self.start_vtuber(vtuber_dir)?;
-            // VTuber typically takes longer to warm up.
-            std::thread::sleep(std::time::Duration::from_secs(5));
-            format!("started (PID {})", pid)
-        };
-
         Ok(format!(
-            "All services ready.\n  OpenClaw: running\n  VITS: {}\n  VTuber: {}",
-            vits_status, vtuber_status,
+            "All services ready.\n  Open-LLM-VTuber: running\n  VITS: {}",
+            vits_status,
         ))
     }
 
