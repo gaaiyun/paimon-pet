@@ -67,7 +67,7 @@ paimon-pet/
 │   │   ├── websocketService.ts   # WebSocket 封装（重连/心跳/发送）
 │   │   └── audioEncoder.ts       # WebM → PCM (Float32) 转换
 │   ├── stores/
-│   │   ├── chatStore.ts          # 聊天消息 + 消息合并
+│   │   ├── chatStore.ts          # 聊天消息 + 消息合并（上限 200 条）
 │   │   ├── petStore.ts           # 宠物状态
 │   │   └── settingsStore.ts      # 设置（Zustand）
 │   ├── settings/                 # 设置面板组件
@@ -75,8 +75,7 @@ paimon-pet/
 ├── src-tauri/                    # Tauri v2 Rust 后端
 │   └── src/
 │       ├── window/
-│       │   ├── tray.rs           # 系统托盘菜单
-│       │   └── setup.rs          # 窗口初始化
+│       │   └── tray.rs           # 系统托盘菜单
 │       ├── backend/
 │       │   └── process.rs        # 后端服务进程管理
 │       └── commands/             # Tauri 命令（健康检查等）
@@ -90,20 +89,43 @@ paimon-pet/
 
 ### 前置条件
 
-- [Node.js](https://nodejs.org/) 18+
-- [Rust](https://rustup.rs/) 工具链
-- [Python](https://python.org/) 3.10+
-- [Open-LLM-VTuber](https://github.com/t41372/Open-LLM-VTuber)
-- VITS 派蒙语音模型（可选，无此模型会降级为 Edge TTS）
+| 依赖 | 说明 | 安装方式 |
+|------|------|---------|
+| [Node.js](https://nodejs.org/) 18+ | 前端构建 | 官网下载 |
+| [Rust](https://rustup.rs/) | Tauri 后端 | rustup.rs |
+| [Python](https://python.org/) 3.10+ | 后端服务 | 官网下载 |
+| [ai-paimon](https://github.com/gaaiyun/ai-paimon) | ClawBot Bridge + VITS TTS | `git clone` |
+| [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) | AI 调度引擎 | `git clone` |
+| [OpenClaw](https://openclaw.com/) | LLM 网关 | 官方安装 |
 
-### 开发模式
+> PaimonPet 是桌面端前端，需要配合 [ai-paimon](https://github.com/gaaiyun/ai-paimon) 后端服务一起使用。
+
+### 第一步：部署后端服务
+
+按照 [ai-paimon 部署指南](https://github.com/gaaiyun/ai-paimon#-quick-start) 完成：
+
+1. 克隆并安装 ai-paimon：`git clone https://github.com/gaaiyun/ai-paimon.git`
+2. 配置 `.env`（OpenClaw 凭证）
+3. 放置 `paimon6k_390000.pth` 模型到 `models/vits/paimon/`
+4. 部署并配置 Open-LLM-VTuber
+
+> 详见 [ai-paimon 完整部署指南](https://github.com/gaaiyun/ai-paimon/blob/main/docs/setup-guide.md)
+
+### 第二步：安装并运行 PaimonPet
 
 ```bash
+# 克隆仓库
 git clone https://github.com/gaaiyun/paimon-pet.git
 cd paimon-pet
+
+# 安装前端依赖
 npm install
+
+# 开发模式运行
 npx tauri dev
 ```
+
+首次启动后，应用会自动检测同目录下的 `ai-paimon` 和 `Open-LLM-VTuber` 路径。
 
 ### 构建发布版
 
@@ -111,15 +133,19 @@ npx tauri dev
 npx tauri build
 ```
 
+构建产物位于 `src-tauri/target/release/bundle/`，包含 MSI 安装包和 NSIS 安装程序。
+
+---
+
 ## 使用说明
 
-1. **启动** — 运行 `npx tauri dev` 或打开构建的可执行文件
-2. **配置路径** — 点击派蒙 → 设置 → 后端 → 配置 ai-paimon 和 Open-LLM-VTuber 路径
-3. **启动服务** — 点击聊天面板中的"启动"按钮，或设置面板中一键启动
-4. **文字聊天** — 点击派蒙精灵打开聊天面板，输入文字按回车发送
-5. **语音输入** — 按住"语音"按钮说话，松开后自动识别并发送
+1. **启动后端** — 先启动 OpenClaw Gateway，再通过应用内的"启动"按钮一键启动 VITS 和 VTuber
+2. **配置路径** — 点击派蒙 → 设置 → 后端 → 配置 ai-paimon 和 Open-LLM-VTuber 路径（通常自动检测）
+3. **文字聊天** — 点击派蒙精灵打开聊天面板，输入文字按回车发送
+4. **语音输入** — 按住"语音"按钮说话，松开后自动识别并发送
+5. **打断** — 点击"打断"按钮中断当前回复和音频播放
 6. **调整大小** — 聊天面板打开时，拖拽窗口右下角调整大小
-7. **托盘菜单** — 右键系统托盘图标可快速操作
+7. **托盘菜单** — 右键系统托盘图标可快速操作（显示/隐藏/聊天/静音/点击穿透）
 
 ## 消息协议
 
@@ -149,7 +175,7 @@ npx tauri build
 
 ### 消息合并机制
 
-同一轮对话中，服务器会发送多个 `audio` 消息（每句话一个音频段）。前端通过 `conversation-chain-start/end` 信号追踪对话回合，将同一轮的所有文本合并为一条聊天消息。
+同一轮对话中，服务器会发送多个 `audio` 消息（每句话一个音频段）。前端通过 `conversation-chain-start/end` 信号追踪对话回合，将同一轮的所有文本合并为一条聊天消息。消息存储上限 200 条，超出时自动裁剪最旧消息。
 
 ## 测试
 
@@ -166,11 +192,12 @@ npx tsc --noEmit            # TypeScript 类型检查
 | 桌面框架 | Tauri v2 | Rust + WebView，透明无边框窗口 |
 | 前端 | React 18 + TypeScript | SPA |
 | 状态管理 | Zustand | 轻量响应式 |
-| UI 组件 | Mantine 7 | 设置面板 |
+| UI 组件 | Mantine 9 | 设置面板 |
 | AI 后端 | Open-LLM-VTuber | Python / FastAPI / WebSocket |
 | ASR | sherpa-onnx SenseVoice | 离线语音识别 |
-| TTS | VITS / Edge TTS | 派蒙声音合成 |
+| TTS | VITS / Edge TTS | 派蒙声音合成（48kHz） |
 | LLM | MiniMax-M2.7 via OpenClaw | 大语言模型 |
+| Bridge | ClawBot Bridge | OpenClaw v3 WS → OpenAI REST |
 
 ## 许可
 
