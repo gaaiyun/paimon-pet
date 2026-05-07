@@ -27,3 +27,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .worktrees/
+
+# Temp/debug files
+screenshot*.png
+write_app.py
+bridge.log
