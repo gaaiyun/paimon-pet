@@ -1,32 +1,31 @@
 /**
  * Convert a WebM/Opus audio blob (from MediaRecorder) to mono 16kHz Float32Array PCM.
- * Uses Web Audio API's decodeAudioData for proper container decoding and resampling.
+ * Uses OfflineAudioContext with the target sample rate so the browser handles
+ * high-quality resampling internally.
  */
 export async function webmBlobToFloat32(blob: Blob): Promise<Float32Array> {
   const arrayBuffer = await blob.arrayBuffer();
-  const audioContext = new OfflineAudioContext(1, 1, 16000);
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-  // Get mono channel data (downmix if stereo)
-  const channelData = audioBuffer.getChannelData(0);
+  // Decode at original rate first to determine duration
+  const probeContext = new OfflineAudioContext(1, 1, 16000);
+  const probeBuffer = await probeContext.decodeAudioData(arrayBuffer);
 
-  // If already at target sample rate, return as-is
-  if (audioBuffer.sampleRate === 16000) {
-    return channelData;
+  // If already 16kHz mono, return directly
+  if (probeBuffer.sampleRate === 16000 && probeBuffer.numberOfChannels === 1) {
+    return probeBuffer.getChannelData(0);
   }
 
-  // Resample to 16kHz
-  const ratio = 16000 / audioBuffer.sampleRate;
-  const newLength = Math.round(channelData.length * ratio);
-  const result = new Float32Array(newLength);
+  // Calculate target sample count from duration
+  const duration = probeBuffer.length / probeBuffer.sampleRate;
+  const targetSamples = Math.ceil(duration * 16000);
 
-  for (let i = 0; i < newLength; i++) {
-    const srcIndex = i / ratio;
-    const srcFloor = Math.floor(srcIndex);
-    const srcCeil = Math.min(srcFloor + 1, channelData.length - 1);
-    const frac = srcIndex - srcFloor;
-    result[i] = channelData[srcFloor] * (1 - frac) + channelData[srcCeil] * frac;
-  }
+  // Re-decode with OfflineAudioContext at target rate for native resampling
+  const context = new OfflineAudioContext(1, targetSamples, 16000);
+  const source = context.createBufferSource();
+  source.buffer = probeBuffer;
+  source.connect(context.destination);
+  source.start();
 
-  return result;
+  const audioBuffer = await context.startRendering();
+  return audioBuffer.getChannelData(0);
 }

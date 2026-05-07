@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import type { ChatMessage } from "../types/pet";
 
+/** Maximum number of messages retained in memory. */
+const MAX_MESSAGES = 200;
+
+/** Trim oldest messages when the list exceeds the cap. */
+function trim(messages: ChatMessage[]): ChatMessage[] {
+  return messages.length > MAX_MESSAGES ? messages.slice(-MAX_MESSAGES) : messages;
+}
+
 interface ChatStore {
   messages: ChatMessage[];
   isTyping: boolean;
@@ -17,7 +25,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   addMessage: (role, text) =>
     set((prev) => ({
-      messages: [
+      messages: trim([
         ...prev.messages,
         {
           id: crypto.randomUUID(),
@@ -25,7 +33,7 @@ export const useChatStore = create<ChatStore>((set) => ({
           text,
           timestamp: Date.now(),
         },
-      ],
+      ]),
     })),
 
   appendToLastAssistant: (text) =>
@@ -42,7 +50,7 @@ export const useChatStore = create<ChatStore>((set) => ({
           timestamp: Date.now(),
         });
       }
-      return { messages: msgs };
+      return { messages: trim(msgs) };
     }),
 
   setTyping: (isTyping) => set({ isTyping }),

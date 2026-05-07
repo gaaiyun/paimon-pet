@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::process::{Child, Command};
 
 /// HTTP health-check timeout (seconds).
@@ -71,6 +72,7 @@ impl ServiceManager {
     /// Runs `python src/vits_server/server.py` with the working directory
     /// set to `ai_paimon_dir`. Sets `VITS_MODEL_PATH` env var if a custom
     /// model path is provided. Returns the child PID on success.
+    /// Captures stderr to report startup failures.
     pub fn start_vits(
         &mut self,
         python_path: &str,
@@ -81,37 +83,37 @@ impl ServiceManager {
         cmd.arg("src/vits_server/server.py")
             .current_dir(ai_paimon_dir)
             .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null());
+            .stderr(std::process::Stdio::piped());
 
         if !vits_model_path.is_empty() {
             cmd.env("VITS_MODEL_PATH", vits_model_path);
         }
 
-        let child = cmd
+        let mut child = cmd
             .spawn()
             .map_err(|e| format!("Failed to start VITS server: {}", e))?;
 
+        // Give the process a moment to start, then check if it exited immediately
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                // Process already exited — read stderr for the error message
+                let mut stderr_output = String::new();
+                if let Some(ref mut stderr) = child.stderr {
+                    let _ = stderr.read_to_string(&mut stderr_output);
+                }
+                return Err(format!(
+                    "VITS server exited immediately ({}): {}",
+                    status,
+                    stderr_output.trim()
+                ));
+            }
+            Ok(None) => {} // Still running — good
+            Err(e) => return Err(format!("Failed to check VITS process: {}", e)),
+        }
+
         let pid = child.id();
         self.vits_process = Some(child);
-        Ok(pid)
-    }
-
-    /// Start the Open-LLM-VTuber server as a child process.
-    ///
-    /// Runs `uv run run_server.py` with the working directory set to
-    /// `open_llm_vtuber_dir`. Returns the child PID on success.
-    pub fn start_vtuber(&mut self, open_llm_vtuber_dir: &str) -> Result<u32, String> {
-        let child = Command::new("uv")
-            .arg("run")
-            .arg("run_server.py")
-            .current_dir(open_llm_vtuber_dir)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .map_err(|e| format!("Failed to start VTuber server: {}", e))?;
-
-        let pid = child.id();
-        self.vtuber_process = Some(child);
         Ok(pid)
     }
 
@@ -126,7 +128,7 @@ impl ServiceManager {
         python_path: &str,
         ai_paimon_dir: &str,
         vits_model_path: &str,
-        vtuber_dir: &str,
+        _vtuber_dir: &str,
     ) -> Result<String, String> {
         // Step 1: Open-LLM-VTuber must be running already.
         if !self.check_vtuber() {

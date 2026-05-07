@@ -51,8 +51,14 @@ function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const autoStartDone = useRef(false);
+  const pathsRef = useRef(paths);
+  const backendStatusRef = useRef(backendStatus);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Keep refs in sync for auto-start logic
+  pathsRef.current = paths;
+  backendStatusRef.current = backendStatus;
 
   const websocketUrl = useMemo(() => "ws://127.0.0.1:" + backendPort + "/client-ws", [backendPort]);
   const websocketOptions = useMemo(() => ({
@@ -208,16 +214,23 @@ function App() {
     }
   };
 
+  // Auto-start backend once paths are available and backend is offline
   useEffect(() => {
     if (autoStartDone.current) return;
-    if (!paths.aiPaimonDir || !paths.openLlmVtuberDir) return;
-    if (backendStatus === "online") return;
+    const currentPaths = pathsRef.current;
+    if (!currentPaths.aiPaimonDir || !currentPaths.openLlmVtuberDir) return;
+    if (backendStatusRef.current === "online") {
+      autoStartDone.current = true;
+      return;
+    }
 
     autoStartDone.current = true;
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       void handleStartAll();
     }, 2000);
-  }, []);
+
+    return () => clearTimeout(timer);
+  }, [backendStatus, paths.aiPaimonDir, paths.openLlmVtuberDir]);
 
   const handleSendText = () => {
     const text = inputText.trim();
