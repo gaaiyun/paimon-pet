@@ -11,6 +11,12 @@ export class AudioService {
   private isPlaying = false;
   private audioQueue: string[] = [];
   private currentResolve: (() => void) | null = null;
+  /**
+   * Number of milliseconds to wait after each audio segment finishes
+   * before starting the next. This creates a natural pause between
+   * sentences so they don't feel rushed or concatenated.
+   */
+  private pauseBetweenSegments_ms = 250;
 
   // -----------------------------------------------------------------------
   // Public API
@@ -51,17 +57,15 @@ export class AudioService {
   }
 
   /**
-   * Drain the queue: play the next item, waiting for it to finish,
-   * then recursively drain again until the queue is empty.
-   * Safe to call concurrently — concurrent calls share the queue.
+   * Drain the queue: play the next item, wait for it to finish, pause,
+   * then recursively drain until the queue is empty.
+   * Concurrent calls share the same queue and are handled safely.
    */
   private async _drainQueue(): Promise<void> {
     if (this.audioQueue.length === 0) return;
 
     // Wait for the previous audio to finish before starting the next
     if (this.isPlaying) {
-      // Wait for current audio to complete by returning a promise
-      // that resolves when current playback ends
       await new Promise<void>((resolve) => {
         this.currentResolve = resolve;
       });
@@ -71,10 +75,17 @@ export class AudioService {
     const base64 = this.audioQueue.shift()!;
     await this._playAudio(base64);
 
-    // After this audio finishes (naturally), drain remaining queue items
+    // After this audio finishes, pause briefly so the next sentence
+    // doesn't feel rushed — creates natural rhythm between segments
     if (this.audioQueue.length > 0) {
+      await this._delay(this.pauseBetweenSegments_ms);
       return this._drainQueue();
     }
+  }
+
+  /** Resolves after `ms` milliseconds. */
+  private _delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
